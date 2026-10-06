@@ -1,0 +1,48 @@
+name: Build Dragon World Tiles
+
+on:
+  push:
+    branches:
+      - feature/dragon-warrior-overworld
+    paths:
+      - 'assets/pixel/labyrinth_of_the_dragon/dragon_world_asset_atlas.png'
+      - 'tools/atlas2gbc'
+      - 'package.json'
+      - 'package-lock.json'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install tools
+        run: npm ci
+
+      - name: Convert atlas
+        run: node ./tools/atlas2gbc assets/pixel/labyrinth_of_the_dragon/dragon_world_asset_atlas.png res/tiles/world_atlas.bin 128
+
+      - name: Commit generated ROM tile data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@github.com"
+          git add res/tiles/world_atlas.bin
+          if git diff --cached --quiet; then
+            echo "world_atlas.bin is already current"
+            exit 0
+          fi
+          git commit -m "Generate GBC Dragon world tiles"
+          git push origin HEAD:${{ github.ref_name }}
