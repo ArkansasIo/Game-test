@@ -42,6 +42,7 @@ INCBIN_EXTERN(tile_data_font)
 INCBIN_EXTERN(tile_battle)
 INCBIN_EXTERN(tile_data_hero)
 INCBIN_EXTERN(tile_data_objects)
+INCBIN_EXTERN(tile_world_atlas)
 INCBIN_EXTERN(tile_monsters)
 
 INCBIN_EXTERN(map_example_0)
