@@ -11,7 +11,9 @@ const WorldRoute world_routes[WORLD_ROUTE_COUNT] = {
 {6,"Dragon Road",5,3,13,13,40},
 {7,"Tower Road",13,13,12,4,55},
 {8,"Shadow Road",12,4,13,6,50},
-{9,"Astral Road",8,8,2,2,65}
+{9,"Astral Road",8,8,2,2,65},
+{10,"Dragon Throne Road",13,13,14,14,70},
+{11,"Void Road",13,13,2,13,80}
 };
 
 static uint8_t near(uint8_t a, uint8_t b) {
