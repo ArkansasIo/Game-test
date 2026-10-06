@@ -39,6 +39,7 @@ LCCFLAGS = -Wm-yC -Wm-yt$(CART_TYPE) -Wl-yo$(ROM_BANKS) -Wl-ya$(RAM_BANKS)
 # is no file association), so we run the interpreter ourselves.
 NODE = node
 PNG2BIN = $(NODE) ./tools/png2bin
+ATLAS2GBC = $(NODE) ./tools/atlas2gbc
 TABLES2C = $(NODE) ./tools/tables2c
 STRINGS2C = $(NODE) ./tools/strings2c
 
@@ -56,6 +57,8 @@ MAP_FILES = $(wildcard $(RES_DIR)/maps/*.tilemap)
 TILEMAP_FILES = $(wildcard $(RES_DIR)/tilemaps/*.tilemap)
 TILEPNG := $(wildcard assets/tiles/*.png)
 TILEBIN := $(subst assets/,res/,$(patsubst %.png,%.bin,$(TILEPNG)))
+WORLD_ATLAS_SRC = assets/pixel/labyrinth_of_the_dragon/dragon_world_asset_atlas.png
+WORLD_ATLAS_BIN = res/tiles/world_atlas.bin
 
 .PHONY: all clean usage assets data strings tables asset_dirs regenerated
 
@@ -71,7 +74,7 @@ else
 all: $(BIN)
 endif
 
-assets: asset_dirs strings tables $(TILEBIN)
+assets: asset_dirs strings tables $(TILEBIN) $(WORLD_ATLAS_BIN)
 
 asset_dirs:
 	mkdir -p res/tiles
@@ -92,6 +95,9 @@ strings: assets/strings.js
 
 res/tiles/%.bin: assets/tiles/%.png
 	$(PNG2BIN) $< $@
+
+$(WORLD_ATLAS_BIN): $(WORLD_ATLAS_SRC)
+	$(ATLAS2GBC) $< $@ 128
 
 $(BIN): $(OBJ_FILES)
 	$(LCC) $(LCCFLAGS) -o $@ $^
