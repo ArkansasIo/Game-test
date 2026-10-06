@@ -1,0 +1,61 @@
+#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const { PNG } = require('pngjs');
+
+const argv = process.argv.slice(2);
+if (argv.length < 2) {
+  console.error('Usage: atlas2gbc <input-png> <output-bin> [tile-count]');
+  process.exit(1);
+}
+const inputFile = argv[0];
+const outputFile = argv[1];
+const tileCount = Math.min(Number(argv[2] || 128), 128);
+
+function quantize(r, g, b, a) {
+  if (a < 128) return 0;
+  const y = (299 * r + 587 * g + 114 * b) / 1000;
+  if (y >= 192) return 0;
+  if (y >= 128) return 1;
+  if (y >= 64) return 2;
+  return 3;
+}
+
+function tileBytes(image, tx, ty) {
+  const bytes = [];
+  for (let y = 0; y < 8; y++) {
+    let low = 0;
+    let high = 0;
+    for (let x = 0; x < 8; x++) {
+      const idx = ((ty * 8 + y) * image.width + (tx * 8 + x)) * 4;
+      const c = quantize(image.data[idx], image.data[idx + 1], image.data[idx + 2], image.data[idx + 3]);
+      low = (low << 1) | (c & 1);
+      high = (high << 1) | ((c >> 1) & 1);
+    }
+    bytes.push(low, high);
+  }
+  return bytes;
+}
+
+fs.createReadStream(inputFile)
+  .pipe(new PNG())
+  .on('parsed', function () {
+    if (this.width % 8 !== 0 || this.height % 8 !== 0) {
+      throw new Error('Atlas dimensions must be multiples of 8: ' + this.width + 'x' + this.height);
+    }
+    const available = (this.width / 8) * (this.height / 8);
+    const count = Math.min(tileCount, available);
+    const out = [];
+    for (let n = 0; n < count; n++) {
+      const tx = n % (this.width / 8);
+      const ty = Math.floor(n / (this.width / 8));
+      out.push(...tileBytes(this, tx, ty));
+    }
+    fs.mkdirSync(path.dirname(outputFile), { recursive: true });
+    fs.writeFileSync(outputFile, Buffer.from(out));
+    console.log('atlas2gbc ' + inputFile + ' -> ' + outputFile + ' (' + count + ' tiles, ' + out.length + ' bytes)');
+  })
+  .on('error', err => {
+    console.error('atlas2gbc: ' + err.message);
+    process.exitCode = 1;
+  });
