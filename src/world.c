@@ -7,6 +7,7 @@
 #include "strings.h"
 #include "tower.h"
 #include "world.h"
+#include "world_landmarks.h"
 #include "world_regions.h"
 
 uint8_t world_chunk_x = 0;
@@ -213,6 +214,22 @@ void world_generate_chunk(uint8_t cx, uint8_t cy) BANKED {
   world_chunk_y = cy;
   world_seed = world_seed_for(cx, cy);
   current_chunk_kind = world_kind_at(cx, cy);
+  const WorldLandmark *landmark = world_landmark_at(cx, cy);
+  if (landmark) {
+    switch (landmark->type) {
+    case LANDMARK_CASTLE:
+    case LANDMARK_CITY: current_chunk_kind = CHUNK_CITY; break;
+    case LANDMARK_TOWN:
+    case LANDMARK_VILLAGE: current_chunk_kind = CHUNK_TOWN; break;
+    case LANDMARK_DUNGEON:
+    case LANDMARK_TOWER:
+    case LANDMARK_BOSS_ARENA:
+    case LANDMARK_RUINS:
+    case LANDMARK_CAVE:
+    case LANDMARK_TREASURE_VAULT: current_chunk_kind = CHUNK_DUNGEON; break;
+    default: break;
+    }
+  }
 
   switch (current_chunk_kind) {
   case CHUNK_CITY: world_lay_out_settlement(9); break;
