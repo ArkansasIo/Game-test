@@ -569,6 +569,8 @@ typedef struct Core {
    * Loads the dungeon tileset.
    */
   const void (*load_dungeon_tiles)(void);
+  /** Loads the Dragon Warrior-style overworld atlas tiles. */
+  const void (*load_world_tiles)(void);
   /**
    * Loads monster tiles.
    * @param tiles Which monster tiles to load.
