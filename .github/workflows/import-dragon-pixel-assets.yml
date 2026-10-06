@@ -1,0 +1,60 @@
+name: Import Dragon Pixel Assets
+
+on:
+  push:
+    branches:
+      - feature/dragon-warrior-overworld
+    paths:
+      - 'tools/pixel_asset_staging/**'
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Rebuild pixel atlas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/dragon
+          cat tools/pixel_asset_staging/dragon-atlas.part*.b64 > /tmp/dragon/atlas.b64
+          base64 -d /tmp/dragon/atlas.b64 > /tmp/dragon/dragon_world_asset_atlas.png
+          echo "647ab01f1394788cc0811a883bc44f1d167a5f0f6d044e76d505823e0bcba096  /tmp/dragon/dragon_world_asset_atlas.png" | sha256sum -c -
+          mkdir -p assets/pixel/labyrinth_of_the_dragon
+          cp /tmp/dragon/dragon_world_asset_atlas.png assets/pixel/labyrinth_of_the_dragon/dragon_world_asset_atlas.png
+
+      - name: Add asset documentation
+        shell: bash
+        run: |
+          cat > assets/pixel/labyrinth_of_the_dragon/README.md <<'EOF'
+          # Labyrinth of the Dragon Pixel Assets
+
+          Generated pixel-art atlas for the Dragon Warrior-style overworld.
+
+          - `dragon_world_asset_atlas.png`: compact 384x256, 8-color indexed reference atlas.
+          - Covers the overworld map, terrain/dungeon tiles, structures, characters, monsters, items, effects, UI, and biome references.
+          - The PNG is an art/reference source; it is not yet compiled directly into the GBC ROM tile data.
+
+          Source generation date: 2026-10-06.
+          EOF
+
+      - name: Remove staging data
+        run: rm -rf tools/pixel_asset_staging
+
+      - name: Commit imported assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/pixel/labyrinth_of_the_dragon tools/pixel_asset_staging
+          git commit -m "Add Dragon Warrior pixel art asset atlas"
+          git push origin HEAD:${{ github.ref_name }}
