@@ -15,6 +15,7 @@
 #include "menu.h"
 #include "sound.h"
 #include "world.h"
+#include "world_zone_encounters.h"
 
 Exit active_exit;
 MapState map_state;
@@ -345,6 +346,12 @@ static bool on_init(void) NONBANKED {
  */
 static bool on_move(void) NONBANKED {
   if (in_world) {
+    if (check_random_encounter()) {
+      if (generate_world_encounter(player.level)) {
+        start_battle();
+        return true;
+      }
+    }
     if (!world_on_move())
       return false;
     update_local_tiles();
