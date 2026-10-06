@@ -128,8 +128,8 @@ static const Tileset title_tileset_smoke = {
 /**
  * ---
  */
-static const Tileset neshacker_presents = {
-  32, 1, tile_neshacker_presents
+static const Tileset arkansasio_presents = {
+  32, 1, tile_arkansasio_presents
 };
 
 static void load_tileset(const Tileset *s, uint8_t *dst) NONBANKED {
@@ -337,7 +337,7 @@ void load_title_tiles(void) {
   core_load_tiles(&title_tileset_smoke, vram_smoke, 0, 48);
 
 
-  core_load_tiles(&neshacker_presents, vram1, 0, 32);
+  core_load_tiles(&arkansasio_presents, vram1, 0, 32);
 }
 
 const Core core = {

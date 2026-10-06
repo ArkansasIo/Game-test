@@ -59,6 +59,22 @@ static void update_stats(
 }
 
 /**
+ * Non-static wrapper around `update_stats` so that class implementations living
+ * in other translation units (see `player.classes.c`) can assign their tiers.
+ */
+void update_stats_public(
+  PowerTier hp,
+  PowerTier sp,
+  PowerTier atk,
+  PowerTier def,
+  PowerTier matk,
+  PowerTier mdef,
+  PowerTier agl
+) {
+  update_stats(hp, sp, atk, def, matk, mdef, agl);
+}
+
+/**
  * Applies damage to the target monster. Takes immunities, etc. into account and
  * handles battle result messages.
  * @param base_damage Base damage for the attack.
@@ -119,6 +135,14 @@ static void damage_monster(uint16_t base_damage, DamageAspect type) {
   }
   else
     monster->target_hp -= damage;
+}
+
+/**
+ * Non-static wrapper around `damage_monster` so that class implementations
+ * living in other translation units (see `player.classes.c`) can deal damage.
+ */
+void damage_monster_public(uint16_t base_damage, DamageAspect type) {
+  damage_monster(base_damage, type);
 }
 
 /**
@@ -187,6 +211,24 @@ static uint8_t damage_all(
   }
 
   return hits;
+}
+
+/**
+ * Non-static wrapper around `damage_all` so that class implementations living
+ * in other translation units (see `player.classes.c`) can use area attacks.
+ * @param base_damage Base damage for the attack.
+ * @param atk ATK of the attacker.
+ * @param use_mdef Whether to roll against MDEF rather than DEF.
+ * @param type Aspect type for the damage.
+ * @return Number of monsters hit by the attack.
+ */
+uint8_t damage_all_public(
+  uint16_t base_damage,
+  uint8_t atk,
+  bool use_mdef,
+  DamageAspect type
+) {
+  return damage_all(base_damage, atk, use_mdef, type);
 }
 
 /**
@@ -881,6 +923,18 @@ void update_player_stats(void) {
   case CLASS_SORCERER:
     sorcerer_update_stats();
     break;
+  case CLASS_NECROMANCER:
+    necromancer_update_stats();
+    break;
+  case CLASS_RUNE_PALADIN:
+    rune_paladin_update_stats();
+    break;
+  case CLASS_SHADOW_ASSASSIN:
+    shadow_assassin_update_stats();
+    break;
+  case CLASS_STORMCALLER:
+    stormcaller_update_stats();
+    break;
   case CLASS_TEST:
     test_class_update_stats();
     break;
@@ -923,6 +977,38 @@ void set_class_abilities(void) {
     class_abilities[3] = &sorcerer3;
     class_abilities[4] = &sorcerer4;
     class_abilities[5] = &sorcerer5;
+    break;
+  case CLASS_NECROMANCER:
+    class_abilities[0] = &necromancer0;
+    class_abilities[1] = &necromancer1;
+    class_abilities[2] = &necromancer2;
+    class_abilities[3] = &necromancer3;
+    class_abilities[4] = &necromancer4;
+    class_abilities[5] = &necromancer5;
+    break;
+  case CLASS_RUNE_PALADIN:
+    class_abilities[0] = &rune_paladin0;
+    class_abilities[1] = &rune_paladin1;
+    class_abilities[2] = &rune_paladin2;
+    class_abilities[3] = &rune_paladin3;
+    class_abilities[4] = &rune_paladin4;
+    class_abilities[5] = &rune_paladin5;
+    break;
+  case CLASS_SHADOW_ASSASSIN:
+    class_abilities[0] = &shadow_assassin0;
+    class_abilities[1] = &shadow_assassin1;
+    class_abilities[2] = &shadow_assassin2;
+    class_abilities[3] = &shadow_assassin3;
+    class_abilities[4] = &shadow_assassin4;
+    class_abilities[5] = &shadow_assassin5;
+    break;
+  case CLASS_STORMCALLER:
+    class_abilities[0] = &stormcaller0;
+    class_abilities[1] = &stormcaller1;
+    class_abilities[2] = &stormcaller2;
+    class_abilities[3] = &stormcaller3;
+    class_abilities[4] = &stormcaller4;
+    class_abilities[5] = &stormcaller5;
     break;
   case CLASS_TEST:
     class_abilities[0] = &test_class0;
@@ -1024,13 +1110,21 @@ const char *get_grant_message(AbilityFlag flag) BANKED {
     return get_fighter_grant_message(flag);
   case CLASS_MONK:
     return get_monk_grant_message(flag);
+  case CLASS_NECROMANCER:
+    return get_necromancer_grant_message(flag);
+  case CLASS_RUNE_PALADIN:
+    return get_rune_paladin_grant_message(flag);
+  case CLASS_SHADOW_ASSASSIN:
+    return get_shadow_assassin_grant_message(flag);
+  case CLASS_STORMCALLER:
+    return get_stormcaller_grant_message(flag);
   default:
     return get_sorcerer_grant_message(flag);
   }
 }
 
 void set_player_level(uint8_t level) BANKED {
-  player.level = level;
+  player.level = clamp_level(level);
   player.exp = get_exp(player.level);
   player.next_level_exp = get_exp(player.level + 1);
   update_player_stats();
@@ -1052,6 +1146,18 @@ void init_player(PlayerClass player_class) BANKED {
     break;
   case CLASS_SORCERER:
     sprintf(player.name, "Tyrion");
+    break;
+  case CLASS_NECROMANCER:
+    sprintf(player.name, "Morrigan");
+    break;
+  case CLASS_RUNE_PALADIN:
+    sprintf(player.name, "Aurelia");
+    break;
+  case CLASS_SHADOW_ASSASSIN:
+    sprintf(player.name, "Vex");
+    break;
+  case CLASS_STORMCALLER:
+    sprintf(player.name, "Zephyra");
     break;
   }
 
@@ -1076,7 +1182,9 @@ bool level_up(uint16_t xp) BANKED {
   bool level_up = false;
   player.exp += xp;
 
-  while (player.exp >= player.next_level_exp) {
+  // Stop at the level cap. Without this the loop would keep raising the level
+  // (and reading past the end of the stat tables) once the player is capped.
+  while (player.level < MAX_LEVEL && player.exp >= player.next_level_exp) {
     level_up = true;
     player.level++;
     player.next_level_exp = get_exp(player.level + 1);
@@ -1103,6 +1211,18 @@ void player_base_attack(void) BANKED {
     break;
   case CLASS_SORCERER:
     sorcerer_base_attack();
+    break;
+  case CLASS_NECROMANCER:
+    necromancer_base_attack();
+    break;
+  case CLASS_RUNE_PALADIN:
+    rune_paladin_base_attack();
+    break;
+  case CLASS_SHADOW_ASSASSIN:
+    shadow_assassin_base_attack();
+    break;
+  case CLASS_STORMCALLER:
+    stormcaller_base_attack();
     break;
   case CLASS_TEST:
     test_class_base_attack();

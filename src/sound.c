@@ -1057,7 +1057,7 @@ void sfx_falling(void) {
   register_init(&nr14, trigger_falling);
 }
 
-void sfx_neshacker_presents(void) {
+void sfx_arkansasio_presents(void) {
   sfx_magic_missile();
 }
 

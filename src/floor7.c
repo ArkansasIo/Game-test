@@ -555,7 +555,7 @@ static void on_draw(void) {
 // Area Definition (shouldn't have to touch this)
 //------------------------------------------------------------------------------
 const Floor floor7 = {
-  ID, DEFAULT_X, DEFAULT_Y, palettes,
+  ID, BIOME_ARCANE_HALLS, DEFAULT_X, DEFAULT_Y, palettes,
   maps,
   exits,
   chests,

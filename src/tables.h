@@ -5,20 +5,20 @@
 #include <stdint.h>
 
 // Flat tables
-extern const uint16_t exp_by_level[99];
+extern const uint16_t exp_by_level[100];
 
 // Tier Composite Tables
-extern const uint16_t monster_exp[4][99];
-extern const uint8_t agl[4][99];
-extern const uint16_t player_hp[4][99];
-extern const uint8_t player_sp[4][99];
-extern const uint8_t player_def[4][99];
-extern const uint8_t player_atk[4][99];
-extern const uint16_t player_dmg[4][99];
-extern const uint16_t monster_hp[4][99];
-extern const uint8_t monster_def[4][99];
-extern const uint8_t monster_atk[4][99];
-extern const uint16_t monster_dmg[4][99];
-extern const uint16_t player_heal[4][99];
+extern const uint16_t monster_exp[4][100];
+extern const uint8_t agl[4][100];
+extern const uint16_t player_hp[4][100];
+extern const uint8_t player_sp[4][100];
+extern const uint8_t player_def[4][100];
+extern const uint8_t player_atk[4][100];
+extern const uint16_t player_dmg[4][100];
+extern const uint16_t monster_hp[4][100];
+extern const uint8_t monster_def[4][100];
+extern const uint8_t monster_atk[4][100];
+extern const uint16_t monster_dmg[4][100];
+extern const uint16_t player_heal[4][100];
 
 #endif

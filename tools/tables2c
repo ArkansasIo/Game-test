@@ -5,6 +5,12 @@ const path = require('path')
 
 const BANK = 5;
 
+/**
+ * Number of level rows read from tables.csv. Index 0 is the level-0 baseline,
+ * so this must be MAX_LEVEL + 1 to cover levels up to and including max level.
+ */
+const TABLE_ROWS = 100;
+
 try {
   console.log('Compiling table data...')
   const data = fs.readFileSync(path.resolve('assets/', 'tables.csv'))
@@ -16,11 +22,27 @@ try {
   });
   lines[1].split(',').forEach((type, i) => tables[i].type = type)
 
-  for (let k = 2; k < 99 + 2; k++) {
-    lines[k].split(',').forEach((value, i) => {
-      tables[i].values.push(value)
-    })
+  // Drop anything blank (a trailing newline, stray whitespace) so the level
+  // rows are contiguous. Index 0 is the level-0 baseline.
+  const rows = lines.slice(2).filter(line => line.trim().length > 0)
+
+  if (rows.length < TABLE_ROWS) {
+    throw new Error(
+      `tables.csv has ${rows.length} data rows but ${TABLE_ROWS} are ` +
+      `required (levels 0..${TABLE_ROWS - 1}).`
+    )
   }
+
+  rows.slice(0, TABLE_ROWS).forEach(line => {
+    const values = line.split(',')
+    if (values.length !== tables.length) {
+      throw new Error(
+        `tables.csv row has ${values.length} columns, expected ` +
+        `${tables.length}.`
+      )
+    }
+    values.forEach((value, i) => tables[i].values.push(value))
+  })
 
   function isComposite(table) {
     const match = table.name.match(/^([a-z_]+)[_][abcs]$/);
@@ -56,12 +78,12 @@ try {
     '',
     '// Flat tables',
     flatTables.map(table => (
-      `extern const ${table.type} ${table.name}[99];`
+      `extern const ${table.type} ${table.name}[${TABLE_ROWS}];`
     )).join('\n'),
     '',
     '// Tier Composite Tables',
     composites.map(comp => (
-      `extern const ${comp.type} ${comp.name}[4][99];`
+      `extern const ${comp.type} ${comp.name}[4][${TABLE_ROWS}];`
     )).join('\n'),
     '',
     '#endif',

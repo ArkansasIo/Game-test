@@ -483,7 +483,7 @@ static void on_draw(void) {
 // Area Definition (shouldn't have to touch this)
 //------------------------------------------------------------------------------
 const Floor floor6 = {
-  ID, DEFAULT_X, DEFAULT_Y, palettes,
+  ID, BIOME_CRYPT, DEFAULT_X, DEFAULT_Y, palettes,
   maps,
   exits,
   chests,

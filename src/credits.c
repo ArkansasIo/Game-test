@@ -67,7 +67,7 @@ void next_text_page(void) {
     break;
   case CREDIT_TEXT_DEVELOPED_BY:
     core.draw_text(VRAM_BACKGROUND_XY(4, 7), str_credits_developed_by, 20);
-    core.draw_text(VRAM_BACKGROUND_XY(4, 8), str_credits_neshacker, 20);
+    core.draw_text(VRAM_BACKGROUND_XY(4, 8), str_credits_arkansasio, 20);
     break;
   case CREDIT_TEXT_PROG_DESIGN:
     core.draw_text(VRAM_BACKGROUND_XY(3, 6), str_credits_programming, 20);

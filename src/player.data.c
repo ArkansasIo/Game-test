@@ -3,7 +3,7 @@
 #include "player.h"
 #include "strings.h"
 
-const palette_color_t hero_colors[16] = {
+const palette_color_t hero_colors[32] = {
   // Druid
   RGB_BLACK,
   RGB8(89, 60, 15),
@@ -24,6 +24,26 @@ const palette_color_t hero_colors[16] = {
   RGB8(200, 165, 45),
   RGB8(144, 37, 49),
   RGB8(42, 14, 59),
+  // Necromancer
+  RGB_BLACK,
+  RGB8(150, 140, 170),
+  RGB8(78, 44, 108),
+  RGB8(18, 10, 28),
+  // Rune Paladin
+  RGB_BLACK,
+  RGB8(240, 228, 176),
+  RGB8(196, 152, 40),
+  RGB8(48, 40, 88),
+  // Shadow Assassin
+  RGB_BLACK,
+  RGB8(120, 124, 140),
+  RGB8(48, 40, 60),
+  RGB8(12, 10, 20),
+  // Stormcaller
+  RGB_BLACK,
+  RGB8(208, 232, 248),
+  RGB8(72, 132, 208),
+  RGB8(20, 28, 72),
 };
 
 //------------------------------------------------------------------------------
@@ -152,30 +172,4 @@ const Ability sorcerer4 = {
 const Ability sorcerer5 = {
   6, str_ability_sorc_wild_magic,
   TARGET_ALL, 33, sorcerer_wild_magic
-};
-
-//------------------------------------------------------------------------------
-
-const Ability test_class0 = {
-  1, "Damage All", TARGET_SELF, 0, test_class_ability0
-};
-
-const Ability test_class1 = {
-  2, "(De)buff", TARGET_SELF, 0, test_class_ability1
-};
-
-const Ability test_class2 = {
-  3, "SUPERKILL", TARGET_SELF, 0, test_class_ability2
-};
-
-const Ability test_class3 = {
-  4, "Test 4", TARGET_SELF, 0, test_class_ability3
-};
-
-const Ability test_class4 = {
-  5, "Test 5", TARGET_SELF, 0, test_class_ability4
-};
-
-const Ability test_class5 = {
-  6, "Test 6", TARGET_SELF, 0, test_class_ability5
 };

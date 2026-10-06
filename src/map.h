@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "biome_id.h"
 #include "core.h"
 #include "item.h"
 #include "monster.h"
@@ -428,6 +429,10 @@ typedef enum MapState {
    */
   MAP_STATE_MENU,
   /**
+   * The full RPG menu (items, status, quests, etc.) is open.
+   */
+  MAP_STATE_RPG_MENU,
+  /**
    * The map should teleport the player to the specified location.
    */
   MAP_STATE_TELEPORT,
@@ -848,6 +853,11 @@ typedef struct Floor {
    * Unique id for the area. Must be non-zero.
    */
   uint8_t id;
+  /**
+   * Biome this floor belongs to. Determines the environment palette and the
+   * monsters available to random encounters.
+   */
+  BiomeId biome;
   /**
    * Default starting column for the player on the starting map.
    */

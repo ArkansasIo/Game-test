@@ -12,6 +12,7 @@
 #include "core.h"
 #include "floor.h"
 #include "map.h"
+#include "menu.h"
 #include "sound.h"
 
 Exit active_exit;
@@ -2453,6 +2454,9 @@ void update_map(void) {
     if (was_pressed(J_START)) {
       show_map_menu();
       return;
+    }    if (was_pressed(J_SELECT)) {
+      open_menu();
+      return;
     }
     if (!check_action())
       check_map_move();
@@ -2502,8 +2506,20 @@ void update_map(void) {
       init_npcs();
       break;
     }
-    return;
-  case MAP_STATE_INITIATE_BATTLE:
+      return;
+    case MAP_STATE_RPG_MENU:
+      update_menu();
+      if (!menu.open) {
+        // Window is hidden by close_menu(); resume normal play.
+        map_state = MAP_STATE_WAITING;
+        init_hero();
+        init_hud();
+        init_flames();
+        init_npcs();
+        break;
+      }
+      return;
+    case MAP_STATE_INITIATE_BATTLE:
     init_timer(battle_wait_timer, 30);
     play_sound(sfx_start_battle);
     map_fade_out(MAP_STATE_START_BATTLE);
@@ -2546,7 +2562,15 @@ void draw_world_map(void) {
     map_state == MAP_STATE_INITIATE_BATTLE ||
     map_state == MAP_STATE_FROM_BATTLE
   ) {
-    return;
-  }
-  on_draw();
-}
+        return;
+      }
+
+      // The RPG menu owns the window layer while it is open, so skip the map's own
+      // drawing to avoid the two fighting over VRAM.
+      if (map_state == MAP_STATE_RPG_MENU) {
+        draw_menu();
+        return;
+      }
+
+      on_draw();
+    }

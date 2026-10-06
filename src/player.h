@@ -23,6 +23,10 @@ typedef enum PlayerClass {
   CLASS_FIGHTER = 1,
   CLASS_MONK = 2,
   CLASS_SORCERER = 3,
+  CLASS_NECROMANCER = 4,
+  CLASS_RUNE_PALADIN = 5,
+  CLASS_SHADOW_ASSASSIN = 6,
+  CLASS_STORMCALLER = 7,
   CLASS_TEST = 0xFF,
 } PlayerClass;
 
@@ -253,6 +257,60 @@ typedef struct Player {
 extern Player player;
 
 /**
+ * Assigns the player's stats from the stat tables using the given power tiers.
+ * Exposed so class implementations in other translation units can set their
+ * own tiers.
+ * @param hp Power tier for max HP.
+ * @param sp Power tier for max SP.
+ * @param atk Power tier for attack.
+ * @param def Power tier for defense.
+ * @param matk Power tier for magic attack.
+ * @param mdef Power tier for magic defense.
+ * @param agl Power tier for agility.
+ */
+void update_stats_public(
+  PowerTier hp,
+  PowerTier sp,
+  PowerTier atk,
+  PowerTier def,
+  PowerTier matk,
+  PowerTier mdef,
+  PowerTier agl
+);
+
+/**
+ * Applies damage to the current encounter target, honouring immunities,
+ * resistances and vulnerabilities, and writing the battle result messages.
+ * Exposed so class implementations in other translation units can deal damage.
+ * @param base_damage Base damage for the attack.
+ * @param type Aspect for the damage.
+ */
+void damage_monster_public(uint16_t base_damage, DamageAspect type);
+
+/**
+ * Heals the player without going over max HP.
+ * @param hp Amount of HP to heal the player.
+ * @return The amount actually healed.
+ */
+uint16_t heal_player(uint16_t hp);
+
+/**
+ * Applies damage to all active monsters, honouring immunities and resistances.
+ * Does not write battle result messages.
+ * @param base_damage Base damage for the attack.
+ * @param atk ATK of the attacker.
+ * @param use_mdef Whether to roll against MDEF rather than DEF.
+ * @param type Aspect type for the damage.
+ * @return Number of monsters hit by the attack.
+ */
+uint8_t damage_all_public(
+  uint16_t base_damage,
+  uint8_t atk,
+  bool use_mdef,
+  DamageAspect type
+);
+
+/**
  * All abilities for the current player class.
  */
 extern const Ability *class_abilities[6];
@@ -344,7 +402,9 @@ inline void set_hp_and_sp(uint16_t hp, uint16_t sp) {
  */
 inline bool is_magic_class(void) {
   return player.player_class == CLASS_DRUID ||
-    player.player_class == CLASS_SORCERER;
+    player.player_class == CLASS_SORCERER ||
+    player.player_class == CLASS_NECROMANCER ||
+    player.player_class == CLASS_STORMCALLER;
 }
 
 /**
@@ -473,5 +533,116 @@ extern const Ability test_class2;
 extern const Ability test_class3;
 extern const Ability test_class4;
 extern const Ability test_class5;
+
+// Necromancer
+
+void necromancer_base_attack(void);
+void necromancer_drain_life(void);
+void necromancer_bone_armor(void);
+void necromancer_raise_dead(void);
+void necromancer_curse(void);
+void necromancer_soul_harvest(void);
+void necromancer_army_of_the_dead(void);
+
+/**
+ * Updates the player's stats using the Necromancer's tiers.
+ */
+void necromancer_update_stats(void);
+
+/**
+ * @param flag Ability flag just granted.
+ * @return The message to display upon granting the ability.
+ */
+const char *get_necromancer_grant_message(AbilityFlag flag);
+
+extern const Ability necromancer0;
+extern const Ability necromancer1;
+extern const Ability necromancer2;
+extern const Ability necromancer3;
+extern const Ability necromancer4;
+extern const Ability necromancer5;
+
+// Rune Paladin
+
+void rune_paladin_base_attack(void);
+void rune_paladin_lay_on_hands(void);
+void rune_paladin_shield_of_faith(void);
+void rune_paladin_smite(void);
+void rune_paladin_consecrate(void);
+void rune_paladin_divine_shield(void);
+void rune_paladin_hammer_of_god(void);
+
+/**
+ * Updates the player's stats using the Rune Paladin's tiers.
+ */
+void rune_paladin_update_stats(void);
+
+/**
+ * @param flag Ability flag just granted.
+ * @return The message to display upon granting the ability.
+ */
+const char *get_rune_paladin_grant_message(AbilityFlag flag);
+
+extern const Ability rune_paladin0;
+extern const Ability rune_paladin1;
+extern const Ability rune_paladin2;
+extern const Ability rune_paladin3;
+extern const Ability rune_paladin4;
+extern const Ability rune_paladin5;
+
+// Shadow Assassin
+
+void shadow_assassin_base_attack(void);
+void shadow_assassin_shadow_step(void);
+void shadow_assassin_poison_blade(void);
+void shadow_assassin_assassinate(void);
+void shadow_assassin_vanish(void);
+void shadow_assassin_death_mark(void);
+void shadow_assassin_thousand_cuts(void);
+
+/**
+ * Updates the player's stats using the Shadow Assassin's tiers.
+ */
+void shadow_assassin_update_stats(void);
+
+/**
+ * @param flag Ability flag just granted.
+ * @return The message to display upon granting the ability.
+ */
+const char *get_shadow_assassin_grant_message(AbilityFlag flag);
+
+extern const Ability shadow_assassin0;
+extern const Ability shadow_assassin1;
+extern const Ability shadow_assassin2;
+extern const Ability shadow_assassin3;
+extern const Ability shadow_assassin4;
+extern const Ability shadow_assassin5;
+
+// Stormcaller
+
+void stormcaller_base_attack(void);
+void stormcaller_static_charge(void);
+void stormcaller_chain_lightning(void);
+void stormcaller_storm_shield(void);
+void stormcaller_lightning_storm(void);
+void stormcaller_thunder_god(void);
+
+/**
+ * Updates the player's stats using the Stormcaller's tiers.
+ */
+void stormcaller_update_stats(void);
+
+/**
+ * @param flag Ability flag just granted.
+ * @return The message to display upon granting the ability.
+ */
+const char *get_stormcaller_grant_message(AbilityFlag flag);
+
+extern const Ability stormcaller0;
+extern const Ability stormcaller1;
+extern const Ability stormcaller2;
+extern const Ability stormcaller3;
+extern const Ability stormcaller4;
+extern const Ability stormcaller5;
 
 #endif

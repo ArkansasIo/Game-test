@@ -510,7 +510,7 @@ static const palette_color_t palettes[] = {
 // Area Definition (shouldn't have to touch this)
 //------------------------------------------------------------------------------
 const Floor floor8 = {
-  ID, DEFAULT_X, DEFAULT_Y, palettes,
+  ID, BIOME_DRAGONS_LAIR, DEFAULT_X, DEFAULT_Y, palettes,
   maps,
   exits,
   chests,

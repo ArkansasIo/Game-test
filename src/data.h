@@ -30,11 +30,11 @@ INCBIN_EXTERN(tilemap_battle_monster_layouts)
 INCBIN_EXTERN(tilemap_map_menu)
 
 INCBIN_EXTERN(tilemap_title_screen)
-INCBIN_EXTERN(tilemap_neshacker_presents)
+INCBIN_EXTERN(tilemap_arkansasio_presents)
 INCBIN_EXTERN(tile_title)
 INCBIN_EXTERN(tile_title_fire)
 INCBIN_EXTERN(tile_title_smoke)
-INCBIN_EXTERN(tile_neshacker_presents)
+INCBIN_EXTERN(tile_arkansasio_presents)
 INCBIN_EXTERN(tilemap_hero_select)
 
 INCBIN_EXTERN(tile_data_dungeon)

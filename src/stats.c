@@ -4,55 +4,55 @@
 #include "player.h"
 
 uint16_t get_exp(uint8_t level) BANKED {
-  return exp_by_level[level - 1];
+  return exp_by_level[clamp_level(level) - 1];
 }
 
 uint16_t get_monster_exp(uint8_t level, PowerTier tier) BANKED {
-  return monster_exp[tier][level - 1];
+  return monster_exp[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_agl(uint8_t level, PowerTier tier) BANKED {
-  return agl[tier][level - 1];
+  return agl[tier][clamp_level(level) - 1];
 }
 
 uint16_t get_player_hp(uint8_t level, PowerTier tier) BANKED {
-  return player_hp[tier][level - 1];
+  return player_hp[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_player_sp(uint8_t level, PowerTier tier) BANKED {
-  return player_sp[tier][level - 1];
+  return player_sp[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_player_def(uint8_t level, PowerTier tier) BANKED {
-  return player_def[tier][level - 1];
+  return player_def[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_player_atk(uint8_t level, PowerTier tier) BANKED {
-  return player_atk[tier][level - 1];
+  return player_atk[tier][clamp_level(level) - 1];
 }
 
 uint16_t get_player_damage(uint8_t level, PowerTier tier) BANKED {
-  return player_dmg[tier][level - 1];
+  return player_dmg[tier][clamp_level(level) - 1];
 }
 
 uint16_t get_monster_hp(uint8_t level, PowerTier tier) BANKED {
-  return monster_hp[tier][level - 1];
+  return monster_hp[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_monster_def(uint8_t level, PowerTier tier) BANKED {
-  return monster_def[tier][level - 1];
+  return monster_def[tier][clamp_level(level) - 1];
 }
 
 uint8_t get_monster_atk(uint8_t level, PowerTier tier) BANKED {
-  return monster_atk[tier][level - 1];
+  return monster_atk[tier][clamp_level(level) - 1];
 }
 
 uint16_t get_monster_dmg(uint8_t level, PowerTier tier) BANKED {
-  return monster_dmg[tier][level - 1];
+  return monster_dmg[tier][clamp_level(level) - 1];
 }
 
 uint16_t get_player_heal(uint8_t level, PowerTier tier) BANKED {
-  return player_heal[tier][level - 1];
+  return player_heal[tier][clamp_level(level) - 1];
 }
 
 bool check_attack(

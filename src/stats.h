@@ -93,6 +93,27 @@ typedef enum DebuffFlag {
  */
 #define MAX_ACTIVE_EFFECTS 4
 
+/**
+ * Highest character / monster level the stat tables cover. Index 0 of each
+ * table is the level-0 baseline, so the tables hold MAX_LEVEL + 1 entries.
+ */
+#define MAX_LEVEL 100
+
+/**
+ * Clamps a level into the range the stat tables actually cover. The tables hold
+ * MAX_LEVEL entries starting at level 1, so a level of 0 or a level above the
+ * cap would otherwise read outside the array.
+ * @param level Level to clamp.
+ * @return The level bounded to 1..MAX_LEVEL.
+ */
+inline uint8_t clamp_level(uint8_t level) {
+  if (level < 1)
+    return 1;
+  if (level > MAX_LEVEL)
+    return MAX_LEVEL;
+  return level;
+}
+
 
 /**
  * Denotes that a status effect never ends.
