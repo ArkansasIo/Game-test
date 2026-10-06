@@ -1,5 +1,6 @@
 #pragma bank 7
 #include "world_zone_encounters.h"
+#include "encounter.h"
 static const WorldEncounterBand bands[REALM_ZONE_COUNT] = {
   { REALM_ZONE_CROWN_REALM, 1, 8, MONSTER_KOBOLD, MONSTER_GOBLIN, MONSTER_BUGBEAR },
   { REALM_ZONE_GREEN_REALM, 4, 18, MONSTER_GOBLIN, MONSTER_BUGBEAR, MONSTER_OWLBEAR },
