@@ -31,3 +31,35 @@ uint8_t world_zone_level(RealmZoneId realm, uint8_t player_level, uint8_t roll) 
   else if (roll % 3 == 2 && level < b->max_level) level++;
   return level;
 }
+
+bool generate_world_encounter(uint8_t player_level) BANKED {
+  const RealmZoneId realm = realm_zone_at(world_chunk_x, world_chunk_y);
+  const WorldEncounterBand *b = world_encounter_band(realm);
+  const uint8_t roll = d256();
+  const uint8_t count_roll = d256();
+  const uint8_t level = world_zone_level(realm, player_level, roll);
+  const MonsterType primary = world_zone_monster(realm, roll);
+  const MonsterType secondary = world_zone_monster(realm, (uint8_t)(roll + 67));
+  const MonsterType elite = b->elite;
+
+  if (count_roll < 180) {
+    reset_encounter(MONSTER_LAYOUT_1);
+    generate_monster(&encounter.monsters[0], primary, level, C_TIER);
+    encounter.monsters[0].id = 'A';
+  } else if (count_roll < 235) {
+    reset_encounter(MONSTER_LAYOUT_2);
+    generate_monster(&encounter.monsters[0], primary, level, C_TIER);
+    encounter.monsters[0].id = 'A';
+    generate_monster(&encounter.monsters[1], secondary, level, B_TIER);
+    encounter.monsters[1].id = primary == secondary ? 'B' : 'A';
+  } else {
+    reset_encounter(MONSTER_LAYOUT_1M_2S);
+    generate_monster(&encounter.monsters[0], elite, level, A_TIER);
+    encounter.monsters[0].id = 'A';
+    generate_monster(&encounter.monsters[1], primary, level, C_TIER);
+    encounter.monsters[1].id = 'A';
+    generate_monster(&encounter.monsters[2], secondary, level, C_TIER);
+    encounter.monsters[2].id = 'B';
+  }
+  return true;
+}
