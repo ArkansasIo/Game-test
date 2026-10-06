@@ -2363,7 +2363,7 @@ static void initialize_world_map(void) {
   if (in_world) {
     active_map = world_map();
     set_hero_position(WORLD_CHUNK_W / 2, WORLD_CHUNK_H / 2);
-    reset_map_objects();
+    clear_npcs();
   }
 
   core.load_font();
