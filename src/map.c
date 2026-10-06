@@ -15,6 +15,7 @@
 #include "menu.h"
 #include "sound.h"
 #include "world.h"
+#include "realm_zones.h"
 #include "world_zone_encounters.h"
 
 Exit active_exit;
@@ -2403,13 +2404,16 @@ static void initialize_world_map(void) {
   core.load_dungeon_tiles();
     if (in_world) {
       core.load_world_tiles();
-      const BiomeId biome = world_biome_at(world_chunk_x, world_chunk_y);
+      const RealmZoneId realm = realm_zone_at(world_chunk_x, world_chunk_y);
       const palette_color_t *palette = world_palette_crown;
-      switch (biome) {
-      case BIOME_CAVERN: palette = world_palette_sun; break;
-      case BIOME_CRYPT: palette = world_palette_mist; break;
-      case BIOME_ARCANE_HALLS: palette = world_palette_shadow; break;
-      case BIOME_DRAGONS_LAIR: palette = world_palette_dragon; break;
+      switch (realm) {
+      case REALM_ZONE_SUN_REALM: palette = world_palette_sun; break;
+      case REALM_ZONE_MIST_REALM: palette = world_palette_mist; break;
+      case REALM_ZONE_FROST_REALM: palette = world_palette_frost; break;
+      case REALM_ZONE_SHADOW_REALM: palette = world_palette_shadow; break;
+      case REALM_ZONE_DRAGON_REALM: palette = world_palette_dragon; break;
+      case REALM_ZONE_ASTRAL_REALM: palette = world_palette_shadow; break;
+      case REALM_ZONE_VOID_REALM: palette = world_palette_shadow; break;
       default: palette = world_palette_crown; break;
       }
       core.load_bg_palette(palette, 0, 1);
