@@ -224,6 +224,7 @@ bool check_random_encounter(void);
  * @param table Table to use when generating the encounter.
  */
 void generate_encounter(EncounterTable *table) NONBANKED;
+void generate_monster(Monster *monster, MonsterType type, uint8_t level, PowerTier tier) NONBANKED;
 
 /**
  * Sets the player's next action to a basic attack.
