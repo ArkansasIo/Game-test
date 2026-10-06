@@ -2410,7 +2410,6 @@ static void initialize_world_map(void) {
       case BIOME_CRYPT: palette = world_palette_mist; break;
       case BIOME_ARCANE_HALLS: palette = world_palette_shadow; break;
       case BIOME_DRAGONS_LAIR: palette = world_palette_dragon; break;
-      case BIOME_CRYPT: palette = world_palette_mist; break;
       default: palette = world_palette_crown; break;
       }
       core.load_bg_palette(palette, 0, 1);
