@@ -1,16 +1,27 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "GBDK (Windows)",
             "includePath": [
                 "${workspaceFolder}/**",
-                "~/gbdk/include"
+                "${workspaceFolder}/src",
+                "C:/Users/Shadow/gbdk/include",
+                "C:/Users/Shadow/gbdk/include/gb"
             ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
+            "defines": [
+                "GBDK2020"
+            ],
+            "compilerPath": "C:/Users/Shadow/gbdk/bin/sdcc.exe",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-gcc-x64",
+            "browse": {
+                "path": [
+                    "${workspaceFolder}/src",
+                    "C:/Users/Shadow/gbdk/include"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
         }
     ],
     "version": 4

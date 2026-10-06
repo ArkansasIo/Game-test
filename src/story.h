@@ -14,6 +14,7 @@
 #ifndef _STORY_H
 #define _STORY_H
 
+#include <gb/gb.h>
 #include <stdbool.h>
 #include <stdint.h>
 

@@ -79,7 +79,12 @@ asset_dirs:
 # Code generation for strings and tables must finish before any object file is
 # compiled, otherwise the generated strings_*.c/tables.c sources may not exist
 # yet. These are declared as order-only prerequisites below.
-tables: assets/tables.csv
+# Tables are generated from assets/schema.conf plus the data/*.csv files it
+# names. Depending on the schema and every data file means an edit to any of
+# them triggers a rebuild.
+TABLES_INPUTS = assets/schema.conf $(wildcard data/*.csv)
+
+tables: $(TABLES_INPUTS)
 	$(TABLES2C)
 
 strings: assets/strings.js

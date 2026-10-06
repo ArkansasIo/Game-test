@@ -239,7 +239,7 @@ addNamespace('player', 4, {
   'storm_thunder_god': 'You become the THUNDER GOD!',
 });
 
-addNamespace('menu', 30, {
+addNamespace('menu', 31, {
   'root': 'Menu',
   'items': 'Items',
   'equip': 'Equip',
@@ -274,7 +274,7 @@ addNamespace('menu', 30, {
   'quit': 'Quit',
 });
 
-addNamespace('story', 30, {
+addNamespace('story', 31, {
   // ---------------------------------------------------------------------------
   // ACT I - The Waking Dark
   // ---------------------------------------------------------------------------

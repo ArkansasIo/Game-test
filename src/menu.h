@@ -23,6 +23,7 @@
 #ifndef _MENU_H
 #define _MENU_H
 
+#include <gb/gb.h>
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -157,7 +158,7 @@ extern Menu menu;
 /**
  * Initializes the menu system. Call once at startup.
  */
-void init_menu(void) NONBANKED;
+void init_menu(void) BANKED;
 
 /**
  * Opens the menu at the root page.

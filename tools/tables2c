@@ -1,132 +1,380 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path')
+/**
+ * tables2c - generate src/tables.h and src/tables.c from the database files.
+ *
+ * Reads `assets/schema.conf` for the table definitions and the CSV files it
+ * names for the rows, then emits C arrays. This replaces the old positional
+ * `tables.csv` format, where a column's meaning was encoded in its name
+ * suffix (`player_hp_c` meant "player_hp, tier C").
+ *
+ * Validation is strict: a missing file, a short table, a duplicate key, a
+ * non-numeric value, or a value that does not fit its declared C type all fail
+ * the build with a message naming the table and row.
+ *
+ * See assets/schema.conf for the format.
+ */
 
+const fs = require('fs');
+const path = require('path');
+
+/** Bank the generated tables live on. */
 const BANK = 5;
 
+/** C type limits, used to reject out-of-range values at build time. */
+const TYPE_LIMITS = {
+  uint8_t: { min: 0, max: 255, bytes: 1 },
+  int8_t: { min: -128, max: 127, bytes: 1 },
+  uint16_t: { min: 0, max: 65535, bytes: 2 },
+  int16_t: { min: -32768, max: 32767, bytes: 2 },
+  uint32_t: { min: 0, max: 4294967295, bytes: 4 },
+};
+
+// ---------------------------------------------------------------- schema parse
+
 /**
- * Number of level rows read from tables.csv. Index 0 is the level-0 baseline,
- * so this must be MAX_LEVEL + 1 to cover levels up to and including max level.
+ * Parses assets/schema.conf into a list of table definitions.
+ * @param {string} file Path to the schema file.
+ * @returns {Array} Table definitions.
  */
-const TABLE_ROWS = 100;
+function parseSchema(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  const tables = [];
+  let cur = null;
 
-try {
-  console.log('Compiling table data...')
-  const data = fs.readFileSync(path.resolve('assets/', 'tables.csv'))
-  const lines = data.toString().replace(/\r/g, '').split('\n')
-  const tables = []
+  text.split(/\r?\n/).forEach(raw => {
+    // Skip whole-line comments first, then strip trailing inline comments.
+    // Order matters: the doc block at the top of the schema contains example
+    // lines like "#   tiers = c,b,a,s" which must not be parsed as config.
+    if (raw.trim().startsWith('#')) return;
+    const line = raw.replace(/\s+#.*$/, '').trim();
+    if (!line) return;
 
-  lines[0].split(',').forEach(name => {
-    tables.push({ name, type: 'uint8_t', values: [] })
-  });
-  lines[1].split(',').forEach((type, i) => tables[i].type = type)
-
-  // Drop anything blank (a trailing newline, stray whitespace) so the level
-  // rows are contiguous. Index 0 is the level-0 baseline.
-  const rows = lines.slice(2).filter(line => line.trim().length > 0)
-
-  if (rows.length < TABLE_ROWS) {
-    throw new Error(
-      `tables.csv has ${rows.length} data rows but ${TABLE_ROWS} are ` +
-      `required (levels 0..${TABLE_ROWS - 1}).`
-    )
-  }
-
-  rows.slice(0, TABLE_ROWS).forEach(line => {
-    const values = line.split(',')
-    if (values.length !== tables.length) {
-      throw new Error(
-        `tables.csv row has ${values.length} columns, expected ` +
-        `${tables.length}.`
-      )
+    const tableMatch = line.match(/^\[table:([a-z_][a-z0-9_]*)\]$/);
+    if (tableMatch) {
+      cur = {
+        name: tableMatch[1],
+        columns: [],
+        tiers: null,
+        rows: null,
+        source: null,
+      };
+      tables.push(cur);
+      return;
     }
-    values.forEach((value, i) => tables[i].values.push(value))
-  })
 
-  function isComposite(table) {
-    const match = table.name.match(/^([a-z_]+)[_][abcs]$/);
-    return match ? match[1] : false;
+    if (!cur) return;
+
+    const kv = line.match(/^(\w+)\s*=\s*(.+)$/);
+    if (!kv) return;
+    const key = kv[1];
+    const value = kv[2].trim();
+
+    switch (key) {
+      case 'column': {
+        const parts = value.split(':').map(s => s.trim());
+        if (parts.length < 2) {
+          throw new Error(`${cur.name}: malformed column '${value}'`);
+        }
+        if (!TYPE_LIMITS[parts[1]]) {
+          throw new Error(`${cur.name}: unknown type '${parts[1]}'`);
+        }
+        cur.columns.push({ name: parts[0], type: parts[1], doc: parts[2] || '' });
+        break;
+      }
+      case 'tiers':
+        cur.tiers = value.split(',').map(s => s.trim());
+        break;
+      case 'rows':
+        cur.rows = parseInt(value, 10);
+        break;
+      case 'source':
+        cur.source = value;
+        break;
+      default:
+        break;
+    }
+  });
+
+  return tables;
+}
+
+// ------------------------------------------------------------------ csv reader
+
+/**
+ * Reads a CSV file into an array of objects keyed by column name.
+ * @param {string} file Path to the CSV.
+ * @returns {{header: string[], rows: object[]}}
+ */
+function readCsv(file) {
+  if (!fs.existsSync(file)) {
+    throw new Error(`missing data file: ${file}`);
+  }
+  const lines = fs.readFileSync(file, 'utf8')
+    .split(/\r?\n/)
+    .filter(l => l.trim().length > 0);
+
+  if (lines.length === 0) throw new Error(`${file} is empty`);
+
+  const header = lines[0].split(',').map(s => s.trim());
+  const rows = lines.slice(1).map((line, i) => {
+    const cells = line.split(',').map(s => s.trim());
+    if (cells.length !== header.length) {
+      throw new Error(
+        `${file}: row ${i + 2} has ${cells.length} columns, expected ${header.length}`
+      );
+    }
+    const obj = {};
+    header.forEach((h, c) => { obj[h] = cells[c]; });
+    return obj;
+  });
+
+  return { header, rows };
+}
+
+// ---------------------------------------------------------------------- build
+
+/**
+ * Builds the value array for a table, validating every cell.
+ * @param {object} table Table definition.
+ * @returns {object} { type, values } where values is rows (flat) or
+ *   [tier][row] (tiered).
+ */
+function buildTable(table) {
+  const keyName = table.columns[0].name;
+  const isTiered = Array.isArray(table.tiers);
+  const valueCol = table.columns.find(
+    c => c.name !== keyName && c.name !== 'tier'
+  );
+  if (!valueCol) {
+    throw new Error(`${table.name}: no value column declared`);
   }
 
-  const flatTables = tables.filter(t => !isComposite(t));
-  const compositeTables = new Map();
+  const { header, rows } = readCsv(table.source);
+
+  if (!header.includes(keyName)) {
+    throw new Error(`${table.name}: ${table.source} has no '${keyName}' column`);
+  }
+  if (!header.includes(valueCol.name)) {
+    throw new Error(
+      `${table.name}: ${table.source} has no '${valueCol.name}' column`
+    );
+  }
+  if (isTiered && !header.includes('tier')) {
+    throw new Error(`${table.name}: tiered table needs a 'tier' column`);
+  }
+
+  const limit = TYPE_LIMITS[valueCol.type];
+
+  /** Validates one cell and returns it as a number. */
+  function cell(row, source) {
+    const raw = row[valueCol.name];
+    const n = Number(raw);
+    if (raw === '' || raw === undefined || !Number.isFinite(n)) {
+      throw new Error(
+        `${table.name}: '${valueCol.name}' is not a number: '${raw}'`
+      );
+    }
+    if (!Number.isInteger(n)) {
+      throw new Error(`${table.name}: '${valueCol.name}' must be an integer: ${raw}`);
+    }
+    if (n < limit.min || n > limit.max) {
+      throw new Error(
+        `${table.name}: value ${n} in ${source} is out of range for ` +
+        `${valueCol.type} (${limit.min}..${limit.max})`
+      );
+    }
+    return n;
+  }
+
+  if (!isTiered) {
+    // Flat: one row per key.
+    const byKey = new Map();
+    rows.forEach(r => {
+      const k = Number(r[keyName]);
+      if (!Number.isInteger(k)) {
+        throw new Error(`${table.name}: key '${r[keyName]}' is not an integer`);
+      }
+      if (byKey.has(k)) {
+        throw new Error(`${table.name}: duplicate row for ${keyName}=${k}`);
+      }
+      byKey.set(k, cell(r, `${table.source} ${keyName}=${k}`));
+    });
+
+    if (table.rows && byKey.size !== table.rows) {
+      throw new Error(
+        `${table.name}: expected ${table.rows} rows, found ${byKey.size}`
+      );
+    }
+
+    // Emit densely, so a gap in the data is caught rather than shifting rows.
+    const values = [];
+    for (let k = 0; k < (table.rows || byKey.size); k++) {
+      if (!byKey.has(k)) {
+        throw new Error(`${table.name}: missing row for ${keyName}=${k}`);
+      }
+      values.push(byKey.get(k));
+    }
+    return { type: valueCol.type, values };
+  }
+
+  // Tiered: values[tier][key].
+  //
+  // The `tier` column holds the array index (0..3), which is what the
+  // generated [4][n] array is indexed by. The schema's `tiers` list names
+  // them (c,b,a,s) for documentation and to fix the array length.
+  const tierCount = table.tiers.length;
+
+  const seen = new Set();
+  const grid = table.tiers.map(() => []);
+  rows.forEach(r => {
+    const t = Number(r.tier);
+    if (!Number.isInteger(t) || t < 0 || t >= tierCount) {
+      throw new Error(
+        `${table.name}: tier '${r.tier}' is out of range 0..${tierCount - 1}`
+      );
+    }
+    const k = Number(r[keyName]);
+    if (!Number.isInteger(k)) {
+      throw new Error(`${table.name}: key '${r[keyName]}' is not an integer`);
+    }
+    const id = `${t}:${k}`;
+    if (seen.has(id)) {
+      throw new Error(
+        `${table.name}: duplicate row for tier=${t} ${keyName}=${k}`
+      );
+    }
+    seen.add(id);
+
+    if (k < 0 || k >= table.rows) {
+      throw new Error(
+        `${table.name}: ${keyName}=${k} is outside 0..${table.rows - 1}`
+      );
+    }
+    grid[t][k] = cell(r, `${table.source} tier=${t} ${keyName}=${k}`);
+  });
+
+  // Every tier must cover every key.
+  table.tiers.forEach((t, i) => {
+    for (let k = 0; k < table.rows; k++) {
+      if (grid[i][k] === undefined) {
+        throw new Error(`${table.name}: missing tier=${t} ${keyName}=${k}`);
+      }
+    }
+  });
+
+  return { type: valueCol.type, values: grid };
+}
+
+// ----------------------------------------------------------------------- main
+
+function main() {
+  console.log('Compiling table data from assets/schema.conf...');
+
+  const tables = parseSchema('assets/schema.conf');
+  if (tables.length === 0) {
+    throw new Error('schema declares no tables');
+  }
+
+  const built = [];
+  let bytes = 0;
 
   tables.forEach(table => {
-    const name = isComposite(table);
-    if (!name) return;
+    const { type, values } = buildTable(table);
+    // Whether the table is tiered is decided by the schema's `tiers` list, not
+    // by inspecting `values`: a flat table's values are an array of numbers and
+    // a tiered table's are an array of arrays, but testing Array.isArray on the
+    // outer value is true in both cases.
+    const isTiered = Array.isArray(table.tiers);
 
-    if (!compositeTables.has(name)) {
-      compositeTables.set(name, {
-        name,
-        type: table.type,
-        tables: [ table.values ]
-      })
-    } else {
-      compositeTables.get(name).tables.push(table.values)
-    }
-  })
+    const rowCount = isTiered ? values[0].length : values.length;
+    const elementCount = isTiered
+      ? values.reduce((a, t) => a + t.length, 0)
+      : values.length;
+    bytes += elementCount * TYPE_LIMITS[type].bytes;
 
-  const composites = Array.from(compositeTables.values())
+    console.log(
+      `  ${table.name.padEnd(16)} ${type.padEnd(9)} ` +
+      `${isTiered ? `[4][${rowCount}]` : `[${rowCount}]`}`
+    );
 
-  const header_file = [
-    '/* tables.h - This file is automatically generated by the tables2c script */',
+    built.push({ table, type, values, isTiered, rowCount });
+  });
+
+  // ------------------------------------------------------------------ header
+
+  const header = [
+    '/* tables.h - generated by tools/tables2c from assets/schema.conf */',
+    '/* Do not edit by hand; edit the schema and the data files instead. */',
     '#ifndef _TABLES_H',
     '#define _TABLES_H',
     '',
     '#include <stdint.h>',
     '',
     '// Flat tables',
-    flatTables.map(table => (
-      `extern const ${table.type} ${table.name}[${TABLE_ROWS}];`
-    )).join('\n'),
+    built.filter(b => !b.isTiered).map(b =>
+      `extern const ${b.type} ${b.table.name}[${b.rowCount}];`
+    ).join('\n'),
     '',
-    '// Tier Composite Tables',
-    composites.map(comp => (
-      `extern const ${comp.type} ${comp.name}[4][${TABLE_ROWS}];`
-    )).join('\n'),
+    '// Tiered tables, indexed [tier][level]',
+    built.filter(b => b.isTiered).map(b =>
+      `extern const ${b.type} ${b.table.name}[4][${b.rowCount}];`
+    ).join('\n'),
     '',
     '#endif',
-  ].join('\n')
-  console.log(`Writing 'src/tables.h'`);
-  fs.writeFileSync(path.join('src/', 'tables.h'), header_file);
+    '',
+  ].join('\n');
 
-  let bytes = 0;
-  tables.forEach(table => {
-    const b = table.type == 'uint8_t' ? 1 : 2;
-    bytes += table.values.length * b
-  })
-  const sizeComment = `// Total: ~${Math.ceil(bytes/1024)} KB (${bytes} bytes)`;
+  fs.writeFileSync(path.join('src', 'tables.h'), header, 'utf8');
+  console.log("Writing 'src/tables.h'");
 
-  const c_file = [
-    '/* tables.c - This file is automatically generated by the tables2c script */',
+  // ------------------------------------------------------------------ source
+
+  const body = [];
+
+  body.push('// Flat tables');
+  built.filter(b => !b.isTiered).forEach(b => {
+    body.push(`const ${b.type} ${b.table.name}[${b.rowCount}] = {`);
+    for (let i = 0; i < b.values.length; i += 12) {
+      body.push('  ' + b.values.slice(i, i + 12).join(', ') + ',');
+    }
+    body.push('};');
+    body.push('');
+  });
+
+  body.push('// Tiered tables, indexed [tier][level]');
+  built.filter(b => b.isTiered).forEach(b => {
+    body.push(`const ${b.type} ${b.table.name}[4][${b.rowCount}] = {`);
+    b.values.forEach(tier => {
+      body.push('  {');
+      for (let i = 0; i < tier.length; i += 12) {
+        body.push('    ' + tier.slice(i, i + 12).join(', ') + ',');
+      }
+      body.push('  },');
+    });
+    body.push('};');
+    body.push('');
+  });
+
+  const source = [
+    '/* tables.c - generated by tools/tables2c from assets/schema.conf */',
+    '/* Do not edit by hand; edit the schema and the data files instead. */',
     `#pragma bank ${BANK}`,
     '#include "tables.h"',
     '',
-    sizeComment,
+    `// Total: ~${Math.ceil(bytes / 1024)} KB (${bytes} bytes)`,
     '',
-    '// Flat Tables',
-    flatTables.map(table => (
-      `const ${table.type} ${table.name}[] = { ${table.values.join(', ')}};`
-    )).join('\n'),
-    '',
-    '// Tier composites',
-    composites.map(comp => {
-      const tableValues = comp.tables.map(table => {
-        return `  {${table.join(', ')}},`
-      }).join('\n')
-      return [
-        `const ${comp.type} ${comp.name}[4][${comp.tables[0].length}] = {`,
-        tableValues,
-        `};`
-      ].join('\n')
-    }).join('\n')
-  ].join('\n')
-  console.log(`Writing 'src/tables.c'`);
-  fs.writeFileSync(path.join('src/', 'tables.c'), c_file);
+    ...body,
+  ].join('\n');
 
-  // console.log(`Tables size: ${Math.ceil(bytes/1024)} KB (${bytes} bytes)`);
+  fs.writeFileSync(path.join('src', 'tables.c'), source, 'utf8');
+  console.log("Writing 'src/tables.c'");
+  console.log(`Total: ~${Math.ceil(bytes / 1024)} KB (${bytes} bytes)`);
+}
+
+try {
+  main();
 } catch (err) {
-  console.error(err);
+  console.error(`\ntables2c: ${err.message}`);
   process.exit(1);
 }

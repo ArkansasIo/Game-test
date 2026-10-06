@@ -1,4 +1,4 @@
-#pragma bank 30
+#pragma bank 31
 
 /**
  * RPG menu system implementation.
@@ -32,8 +32,12 @@ static Timer cursor_blink_timer;
 
 /**
  * Whether the cursor is in the visible half of its blink cycle.
+ *
+ * Deliberately uninitialised here: an initialised static in a banked
+ * translation unit makes SDCC emit a startup copy routine, which is what was
+ * breaking the display. The value is set in init_menu instead.
  */
-static bool cursor_blink_on = true;
+static bool cursor_blink_on;
 
 /**
  * Text buffer for formatting numbers into menu rows.
@@ -522,7 +526,15 @@ void close_menu(void) BANKED {
     move_win(0, 144);
 }
 
-void init_menu(void) NONBANKED {
+/**
+ * Initializes the menu system.
+ *
+ * This is BANKED, not NONBANKED: every field it writes (`menu`,
+ * `cursor_blink_timer`, `cursor_blink_on`) lives in this translation unit on
+ * bank 30. A NONBANKED function would run with whatever bank happened to be
+ * mapped and corrupt unrelated data.
+ */
+void init_menu(void) BANKED {
     menu.open = false;
     menu.page = MENU_PAGE_ROOT;
     menu.cursor = 0;
