@@ -45,6 +45,12 @@ static const Tileset objects_tileset = { 128, 10, tile_data_objects };
 /**
  * Dungeon level tileset (page 1).
  */
+static const Tileset world_tileset = {
+  128,
+  18,
+  tile_world_atlas
+};
+
 static const Tileset dungeon_tileset_page1 = {
   128,
   12,
@@ -181,6 +187,12 @@ static void load_dungeon_tiles(void) NONBANKED {
   core.load_tileset(&dungeon_tileset_page2, VRAM_SHARED_TILES);
   VBK_REG = VBK_BANK_1;
   core.load_tileset(&dungeon_tileset_page3, VRAM_BG_TILES);
+}
+
+
+static void load_world_tiles(void) NONBANKED {
+  VBK_REG = VBK_BANK_0;
+  core.load_tileset(&world_tileset, VRAM_BG_TILES);
 }
 
 static void load_hero_tiles(uint8_t player_class) NONBANKED {
@@ -356,6 +368,7 @@ const Core core = {
   print_fraction,
   core_fill,
   load_dungeon_tiles,
+  load_world_tiles,
   load_monster_tiles,
   load_title_tiles,
 };
