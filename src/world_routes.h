@@ -5,7 +5,7 @@
 #include "world.h"
 
 typedef struct WorldRoute { uint8_t id; const char *name; uint8_t from_x,from_y,to_x,to_y,min_level; } WorldRoute;
-#define WORLD_ROUTE_COUNT 10
+#define WORLD_ROUTE_COUNT 12
 #define ROUTE_NONE 0xFF
 extern const WorldRoute world_routes[WORLD_ROUTE_COUNT];
 bool world_route_corridor(uint8_t cx,uint8_t cy) BANKED;
