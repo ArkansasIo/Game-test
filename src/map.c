@@ -255,6 +255,25 @@ static Door doors[MAX_DOORS];
  * Palettes for a floor.
  */
 static palette_color_t floor_palettes[7 * 4];
+static const palette_color_t world_palette_crown[4] = {
+  RGB8(224, 232, 192), RGB8(144, 176, 96), RGB8(72, 112, 56), RGB8(24, 40, 24)
+};
+static const palette_color_t world_palette_sun[4] = {
+  RGB8(248, 224, 152), RGB8(208, 160, 72), RGB8(136, 88, 40), RGB8(56, 32, 24)
+};
+static const palette_color_t world_palette_mist[4] = {
+  RGB8(192, 216, 184), RGB8(104, 152, 112), RGB8(48, 88, 72), RGB8(16, 32, 32)
+};
+static const palette_color_t world_palette_frost[4] = {
+  RGB8(232, 240, 248), RGB8(152, 192, 216), RGB8(80, 120, 160), RGB8(24, 40, 64)
+};
+static const palette_color_t world_palette_shadow[4] = {
+  RGB8(192, 184, 208), RGB8(112, 88, 144), RGB8(56, 40, 80), RGB8(16, 8, 24)
+};
+static const palette_color_t world_palette_dragon[4] = {
+  RGB8(240, 200, 168), RGB8(192, 104, 64), RGB8(104, 40, 32), RGB8(32, 8, 16)
+};
+
 
 /**
  * Default X position for a floor.
@@ -1301,8 +1320,14 @@ static void get_map_tile(MapTile *tile, int8_t x, int8_t y) NONBANKED {
   uint8_t attr = *data;
   SWITCH_ROM(_prev_bank);
 
-  uint8_t map_tile = map_tile_lookup[t & MAP_TILE_MASK];
+  uint8_t map_tile;
   uint8_t map_attr = t >> 6;
+  if (in_world) {
+    // World map records use their low six bits as direct atlas tile ids.
+    map_tile = t & MAP_TILE_MASK;
+  } else {
+    map_tile = map_tile_lookup[t & MAP_TILE_MASK];
+  }
 
   tile->chest = NULL;
   tile->door = NULL;
@@ -2376,7 +2401,22 @@ static void initialize_world_map(void) {
   core.load_font();
   core.load_object_tiles();
   core.load_dungeon_tiles();
-  core.load_bg_palette(floor_palettes, 0, 7);
+    if (in_world) {
+      core.load_world_tiles();
+      const BiomeId biome = world_biome_at(world_chunk_x, world_chunk_y);
+      const palette_color_t *palette = world_palette_crown;
+      switch (biome) {
+      case BIOME_CAVERN: palette = world_palette_sun; break;
+      case BIOME_CRYPT: palette = world_palette_mist; break;
+      case BIOME_ARCANE_HALLS: palette = world_palette_shadow; break;
+      case BIOME_DRAGONS_LAIR: palette = world_palette_dragon; break;
+      case BIOME_CRYPT: palette = world_palette_mist; break;
+      default: palette = world_palette_crown; break;
+      }
+      core.load_bg_palette(palette, 0, 1);
+    } else {
+      core.load_bg_palette(floor_palettes, 0, 7);
+    }
 
   text_writer.auto_page = AUTO_PAGE_OFF;
   textbox.init();
