@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include "biome_id.h"
 #include "core.h"
+#include "world.h"
 
 typedef enum RealmZoneId {
   REALM_ZONE_CROWN_REALM,
