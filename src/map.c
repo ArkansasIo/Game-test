@@ -14,6 +14,7 @@
 #include "map.h"
 #include "menu.h"
 #include "sound.h"
+#include "world.h"
 
 Exit active_exit;
 MapState map_state;
@@ -343,6 +344,16 @@ static bool on_init(void) NONBANKED {
  * Switches to the floors bank and calls its `on_move` function.
  */
 static bool on_move(void) NONBANKED {
+  if (in_world) {
+    if (!world_on_move())
+      return false;
+    update_local_tiles();
+    refresh_map_screen();
+    clear_flames();
+    clear_npcs();
+    return true;
+  }
+
   const uint8_t _prev_bank = CURRENT_BANK;
   bool value;
   SWITCH_ROM(floor_bank->bank);
@@ -2349,6 +2360,12 @@ void remap_exit(
 static void initialize_world_map(void) {
   DISPLAY_OFF;
 
+  if (in_world) {
+    active_map = world_map();
+    set_hero_position(WORLD_CHUNK_W / 2, WORLD_CHUNK_H / 2);
+    reset_map_objects();
+  }
+
   core.load_font();
   core.load_object_tiles();
   core.load_dungeon_tiles();
@@ -2373,7 +2390,7 @@ static void initialize_world_map(void) {
 void init_world_map(void) NONBANKED {
   SWITCH_ROM(MAP_SYSTEM_BANK);
   initialize_world_map();
-  execute_on_init = true;
+  execute_on_init = !in_world;
   map_state = MAP_STATE_WAITING;
 }
 
