@@ -33,7 +33,7 @@ typedef enum InitialGameMode {
 /**
  * Determines the initial game mode for the game.
  */
-const InitialGameMode initial_mode = GAME_MODE_NORMAL;
+static InitialGameMode initial_mode = GAME_MODE_NORMAL;
 
 /**
  * Uncomment to enable sound effect testing when pressing the 'B' button.
@@ -49,7 +49,7 @@ const InitialGameMode initial_mode = GAME_MODE_NORMAL;
 /**
  * Initializes the core game engine.
  */
-static inline void initialize(void) {
+static void initialize(void) {
   ENABLE_RAM;
 
   initarand(RANDOM_SEED);
@@ -79,7 +79,7 @@ static inline void initialize(void) {
 /**
  * Executes core gameloop logic.
  */
-static inline void game_loop(void) {
+static void game_loop(void) {
   switch (game_state) {
   case GAME_STATE_TITLE:
     update_title_screen();
@@ -102,7 +102,7 @@ static inline void game_loop(void) {
 /**
  * Executes rendering logic that must occur during a VBLANK.
  */
-static inline void render(void) {
+static void render(void) {
   switch (game_state) {
   case GAME_STATE_WORLD_MAP:
     draw_world_map();
@@ -118,7 +118,7 @@ static inline void render(void) {
 /**
  * Reads and updates the joypad state.
  */
-static inline void update_joypad(void) {
+static void update_joypad(void) {
   uint8_t last = joypad_down;
   joypad_down = joypad();
   joypad_pressed = ~last & joypad_down;
