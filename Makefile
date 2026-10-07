@@ -60,7 +60,7 @@ TILEBIN := $(subst assets/,res/,$(patsubst %.png,%.bin,$(TILEPNG)))
 WORLD_ATLAS_SRC = assets/pixel/labyrinth_of_the_dragon/dragon_world_asset_atlas.png
 WORLD_ATLAS_BIN = res/tiles/world_atlas.bin
 
-.PHONY: all clean usage assets data strings tables asset_dirs regenerated
+.PHONY: all clean usage assets strings tables asset_dirs regenerated
 
 # The generated sources (strings_*.bank*.c, tables.c) define symbols referenced
 # by the hand-written sources, and they do not exist on a clean checkout. The
@@ -68,7 +68,7 @@ WORLD_ATLAS_BIN = res/tiles/world_atlas.bin
 # so 'all' first produces the generated sources and then re-invokes make with
 # DATA_FILES refreshed.
 ifeq ($(DID_CODEGEN),)
-all: assets data
+all: assets
 	@"$(MAKE)" DID_CODEGEN=1 $(BIN)
 else
 all: $(BIN)
@@ -104,9 +104,6 @@ $(BIN): $(OBJ_FILES)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) strings tables
 	$(LCC) $(LCCFLAGS) -c $< -o $@
-
-data:
-	touch $(DATA_DIR)/*.c
 
 $(OBJ_DIR)/%.o: $(DATA_DIR)/%.c | $(OBJ_DIR) strings tables
 	$(LCC) $(LCCFLAGS) -c $< -o $@
