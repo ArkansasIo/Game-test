@@ -125,12 +125,17 @@ static void world_lay_out_settlement(uint8_t buildings) {
   world_put(WORLD_CHUNK_W - 1, mid_y, TOWER_TILE_FLOOR);
 
   for (uint8_t b = 0; b < buildings; b++) {
-    uint8_t bx = 4 + (b % 3) * 7;
-    uint8_t by = 5 + (b / 3) * 6;
-    if (bx + 4 >= WORLD_CHUNK_W - 1 || by + 3 >= WORLD_CHUNK_H - 1) continue;
-    world_rect(bx, by, 4, 3, TOWER_TILE_WALL);
-    if (by < mid_y) world_put(bx + 2, by + 2, TOWER_TILE_FLOOR);
-    else world_put(bx + 2, by, TOWER_TILE_FLOOR);
+    const uint8_t bx = 4 + (b % 3) * 7;
+    const uint8_t by = 5 + (b / 3) * 6;
+    const bool fits = (bx + 4 < WORLD_CHUNK_W - 1) &&
+                      (by + 3 < WORLD_CHUNK_H - 1);
+    if (fits) {
+      world_rect(bx, by, 4, 3, TOWER_TILE_WALL);
+      if (by < mid_y)
+        world_put(bx + 2, by + 2, TOWER_TILE_FLOOR);
+      else
+        world_put(bx + 2, by, TOWER_TILE_FLOOR);
+    }
   }
 }
 
