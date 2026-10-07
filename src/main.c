@@ -130,11 +130,8 @@ static inline void update_joypad(void) {
  * joypad state updates.
  */
 void main(void) {
-  if (_cpu == CGB_TYPE)
-    cpu_fast();
-  else {
-    while(1) {}
-  }
+  /* This cartridge is explicitly GBC-only (see README and build flags). */
+  cpu_fast();
 
   disable_interrupts();
   DISPLAY_OFF;
