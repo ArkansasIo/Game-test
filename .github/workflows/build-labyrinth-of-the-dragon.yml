@@ -1,0 +1,54 @@
+name: Build Labyrinth of the Dragon
+
+on:
+  push:
+    branches:
+      - feature/dragon-warrior-overworld
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-gbc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install Node tools
+        run: npm ci
+
+      - name: Install GBDK-2020 4.5.0
+        run: |
+          curl -L --fail --retry 3 -o /tmp/gbdk.tar.gz \
+            https://github.com/gbdk-2020/gbdk-2020/releases/download/4.5.0/gbdk-linux64.tar.gz
+          mkdir -p /opt
+          tar -xzf /tmp/gbdk.tar.gz -C /opt
+          echo "GBDK_HOME=/opt/gbdk" >> "$GITHUB_ENV"
+          echo "/opt/gbdk/bin" >> "$GITHUB_PATH"
+
+      - name: Build ROM
+        run: |
+          make clean
+          make
+          test -s LabyrinthOfTheDragon.gbc
+          ls -lh LabyrinthOfTheDragon.gbc
+
+      - name: Check ROM usage
+        run: make usage
+
+      - name: Upload GBC ROM
+        uses: actions/upload-artifact@v4
+        with:
+          name: LabyrinthOfTheDragon-gbc
+          path: LabyrinthOfTheDragon.gbc
+          if-no-files-found: error
