@@ -137,7 +137,8 @@ static void update_player_status_effects(void) {
     else
       player.buffs |= effect->flag;
 
-    switch (k) {
+    /* k is the effect-slot index; effect->effect is the status-effect id. */
+    switch (effect->effect) {
     case DEBUFF_BLIND:
       player.atk = 0;
       break;
