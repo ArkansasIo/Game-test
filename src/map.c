@@ -361,6 +361,12 @@ static bool on_init(void) NONBANKED {
   return value;
 }
 
+/* Forward declarations for helpers used by the world-map movement path. */
+static void clear_flames(void);
+static void clear_npcs(void);
+static void refresh_map_screen(void);
+static void update_local_tiles(void);
+
 /**
  * Switches to the floors bank and calls its `on_move` function.
  */
@@ -393,6 +399,9 @@ static bool on_move(void) NONBANKED {
  * Switches to the floors bank and calls its `on_special` function.
  */
 static bool on_special(void) NONBANKED {
+  if (in_world)
+    return false;
+
   const uint8_t _prev_bank = CURRENT_BANK;
   bool value;
   SWITCH_ROM(floor_bank->bank);
@@ -405,6 +414,9 @@ static bool on_special(void) NONBANKED {
  * Switches to the floor's bank and calls the `on_action` function.
  */
 static bool on_action(void) NONBANKED {
+  if (in_world)
+    return false;
+
   const uint8_t _prev_bank = CURRENT_BANK;
   bool value;
   SWITCH_ROM(floor_bank->bank);
@@ -417,6 +429,9 @@ static bool on_action(void) NONBANKED {
  * Switches to the floor's bank and calls the `on_load` function.
  */
 static void on_load(void) NONBANKED {
+  if (in_world)
+    return;
+
   const uint8_t _prev_bank = CURRENT_BANK;
   SWITCH_ROM(floor_bank->bank);
   if (floor_bank->floor->on_load)
@@ -428,6 +443,9 @@ static void on_load(void) NONBANKED {
  * Switches to the floor's bank and calls the `on_draw` function.
  */
 static void on_draw(void) NONBANKED {
+  if (in_world)
+    return;
+
   const uint8_t _prev_bank = CURRENT_BANK;
   SWITCH_ROM(floor_bank->bank);
   if (floor_bank->floor->on_draw)
@@ -2346,6 +2364,9 @@ static bool check_npcs(void) {
  * @return `true` if an action was attempted.
  */
 static bool check_action(void) {
+  if (in_world)
+    return false;
+
   if (was_pressed(J_A)) {
     if (check_signs())
       return true;
@@ -2462,9 +2483,17 @@ void return_from_death(void) NONBANKED {
   player.magic_keys = 0;
   player.got_magic_key = true;
 
-  set_active_floor(&bank_floor1);
-  initialize_world_map();
+  if (in_world) {
+    /*
+     * Do not switch to a dungeon floor after an overworld death. Re-entering
+     * the world rebuilds the active chunk and restores a valid world map.
+     */
+    world_enter();
+  } else {
+    set_active_floor(&bank_floor1);
+  }
 
+  initialize_world_map();
   map_fade_in(MAP_STATE_WAITING);
 }
 
