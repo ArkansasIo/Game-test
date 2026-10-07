@@ -129,8 +129,9 @@ const char *menu_title_for(MenuPage page) BANKED
  */
 static void cursor_position_root(uint8_t index, uint8_t *x, uint8_t *y)
 {
-  *x = MENU_X + 1 + (index % MENU_ROOT_COLS) * 9;
-  *y = MENU_Y + MENU_LIST_Y + (index / MENU_ROOT_COLS);
+  /* MENU_ROOT_COLS is fixed at 2; shifts avoid SDCC optimizer warnings. */
+  *x = MENU_X + 1 + (index & 1) * 9;
+  *y = MENU_Y + MENU_LIST_Y + (index >> 1);
 }
 
 /**
@@ -402,9 +403,9 @@ static void move_cursor(int8_t dx, int8_t dy)
   if (menu.page == MENU_PAGE_ROOT)
   {
     // 2-column grid.
-    const uint8_t rows = (count + MENU_ROOT_COLS - 1) / MENU_ROOT_COLS;
-    uint8_t col = menu.cursor % MENU_ROOT_COLS;
-    uint8_t row = menu.cursor / MENU_ROOT_COLS;
+    const uint8_t rows = (count + 1) >> 1;
+    uint8_t col = menu.cursor & 1;
+    uint8_t row = menu.cursor >> 1;
 
     if (dx > 0)
       col = (col + 1) % MENU_ROOT_COLS;
